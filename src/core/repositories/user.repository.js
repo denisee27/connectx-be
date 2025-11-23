@@ -14,6 +14,15 @@ export function makeUserRepository({ prisma }) {
     role: true,
     status: true,
     profilePictureUrl: true,
+    gender: true,
+    occupation: true,
+    mbti: true,
+    mbtiDesc: true,
+    descPersonalization: true,
+    borndate: true,
+    personality: true,
+    countryId: true,
+    cityId: true,
     createdAt: true,
     lastLoginAt: true,
     emailVerifiedAt: true,
@@ -104,12 +113,12 @@ export function makeUserRepository({ prisma }) {
 
       const searchWhere = search
         ? {
-            OR: [
-              { name: { contains: search, mode: "insensitive" } },
-              { email: { contains: search, mode: "insensitive" } },
-              { username: { contains: search, mode: "insensitive" } },
-            ],
-          }
+          OR: [
+            { name: { contains: search, mode: "insensitive" } },
+            { email: { contains: search, mode: "insensitive" } },
+            { username: { contains: search, mode: "insensitive" } },
+          ],
+        }
         : {};
 
       const where = { ...baseWhere, ...searchWhere };
