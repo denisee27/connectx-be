@@ -1,5 +1,3 @@
-import { getPageData } from '../utils/pagination.js';
-
 /**
  * @typedef {import('@prisma/client').PrismaClient} PrismaClient
  * @typedef {import('@prisma/client').Questioner} Questioner
@@ -7,23 +5,23 @@ import { getPageData } from '../utils/pagination.js';
  * @typedef {import('../utils/pagination.js').Pagination} Pagination
  */
 
-export const safeQuestionerSelect = {
-    id: true,
-    category: true,
-    type: true,
-    question: true,
-};
 
 /**
  * @param {PrismaClient} prisma
  */
-export function makeQuestionerRepository(prisma) {
+export function makeQuestionerRepository({ prisma }) {
+    const safeQuestionerSelect = {
+        id: true,
+        category: true,
+        type: true,
+        question: true,
+    };
     return {
         /**
          * @param {string} id
          * @returns {Promise<Questioner | null>}
          */
-        findById(id) {
+        async findById(id) {
             return prisma.questioner.findUnique({
                 where: { id },
                 select: safeQuestionerSelect,
@@ -34,28 +32,28 @@ export function makeQuestionerRepository(prisma) {
          * @param {Pagination} pagination
          * @returns {Promise<PageData<Questioner>>}
          */
-        async findMany({ page, limit, search, type, category }) {
-            const where = {
-                question: {
-                    contains: search,
-                    mode: 'insensitive',
-                },
-                type,
-                category,
-            };
+        // async findMany({ page, limit, search, type, category }) {
+        //     const where = {
+        //         question: {
+        //             contains: search,
+        //             mode: 'insensitive',
+        //         },
+        //         type,
+        //         category,
+        //     };
 
-            const [questioners, total] = await Promise.all([
-                prisma.questioner.findMany({
-                    where,
-                    select: safeQuestionerSelect,
-                    take: limit,
-                    skip: (page - 1) * limit,
-                }),
-                prisma.questioner.count({ where }),
-            ]);
+        //     const [questioners, total] = await Promise.all([
+        //         prisma.questioner.findMany({
+        //             where,
+        //             select: safeQuestionerSelect,
+        //             take: limit,
+        //             skip: (page - 1) * limit,
+        //         }),
+        //         prisma.questioner.count({ where }),
+        //     ]);
 
-            return getPageData(questioners, total, page, limit);
-        },
+        //     return getPageData(questioners, total, page, limit);
+        // },
 
         /**
          * @param {Questioner} data
@@ -87,6 +85,15 @@ export function makeQuestionerRepository(prisma) {
         delete(id) {
             return prisma.questioner.delete({
                 where: { id },
+                select: safeQuestionerSelect,
+            });
+        },
+
+        /**
+         * @returns {Promise<Questioner[]>}
+         */
+        async findAll() {
+            return prisma.questioner.findMany({
                 select: safeQuestionerSelect,
             });
         },

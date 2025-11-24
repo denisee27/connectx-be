@@ -43,6 +43,8 @@ const envSchema = z.object({
 
   // URLs
   FRONTEND_URL: z.string().url().optional(),
+  AI_AGENT_URL: z.string().url().optional(),
+  AI_TOKEN: z.string().min(1).optional(),
 
   // Cookie settings
   COOKIE_DOMAIN: z.string().optional(),

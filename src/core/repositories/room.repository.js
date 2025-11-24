@@ -1,5 +1,3 @@
-import { getPageData } from '../utils/pagination.js';
-
 /**
  * @typedef {import('@prisma/client').PrismaClient} PrismaClient
  * @typedef {import('@prisma/client').Room} Room
@@ -11,6 +9,8 @@ export const safeRoomSelect = {
     id: true,
     slug: true,
     categoryId: true,
+    cityId: true,
+    regionId: true,
     type: true,
     title: true,
     description: true,
@@ -105,6 +105,38 @@ export function makeRoomRepository(prisma) {
         delete(id) {
             return prisma.room.delete({
                 where: { id },
+                select: safeRoomSelect,
+            });
+        },
+
+        findUpcoming(userId) {
+            return prisma.room.findMany({
+                where: {
+                    participants: {
+                        some: {
+                            userId,
+                        },
+                    },
+                    datetime: {
+                        gte: new Date(),
+                    },
+                },
+                select: safeRoomSelect,
+            });
+        },
+
+        findPast(userId) {
+            return prisma.room.findMany({
+                where: {
+                    participants: {
+                        some: {
+                            userId,
+                        },
+                    },
+                    datetime: {
+                        lt: new Date(),
+                    },
+                },
                 select: safeRoomSelect,
             });
         },

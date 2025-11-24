@@ -85,5 +85,14 @@ export function makeUserService({ userRepository, env, logger, mailerService }) 
       await this.getUserById(id);
       return userRepository.delete(id, deletedByUserId);
     },
-  };
+
+
+    async createTemporaryUser(data) {
+      const user = await userRepository.create({
+        ...data,
+      });
+      logger.info({ userId: user.id }, "Temporary user created");
+      return user;
+    },
+  }
 }

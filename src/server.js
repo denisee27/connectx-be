@@ -9,12 +9,15 @@ import { env } from "./config/index.js";
 import { logger } from "./infra/logger/index.js";
 import container from "./container.js";
 import { authRouter } from "./api/v1/auth/auth.router.js";
-import { usersRouter } from "./api/v1/users/users.router.js";
+import { profilingRouter } from "./api/v1/profiling/profiling.router.js";
+import { placeRouter } from "./api/v1/place/place.router.js";
 import { errorHandler } from "./api/middleware/errorHandler.middleware.js";
 import { authLimiter, apiLimiter } from "./api/middleware/ratelimit.middleware.js";
 import { healthRouter } from "./api/v1/system/health.router.js";
 import { rolesRouter } from "./api/v1/roles/roles.router.js";
 import { statsRouter } from "./api/v1/stats/stats.router.js";
+import { profileRouter } from "./api/v1/profile/profile.router.js";
+import { scheduleRouter } from "./api/v1/schedule/schedule.router.js";
 
 const app = express();
 app.set("trust proxy", 1); // if behind a proxy/CDN
@@ -76,7 +79,10 @@ app.get("/api-docs.json", (req, res) => {
 
 // API routes
 app.use("/api/v1/auth", authRouter);
-app.use("/api/v1/users", usersRouter);
+app.use("/api/v1/profile", profileRouter);
+app.use("/api/v1/schedules", scheduleRouter);
+app.use("/api/v1/profiling", profilingRouter);
+app.use("/api/v1/places", placeRouter);
 app.use("/api/v1/roles", rolesRouter);
 app.use("/api/v1/stats", statsRouter);
 app.use("/api/v1/healthz", healthRouter);

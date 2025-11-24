@@ -13,7 +13,7 @@ datasource db {
 // User model with improved relations and field names
 model User {
   id                String    @id @default(uuid())
-  email             String    @unique
+  email             String    
   username          String?   @unique
   name              String
   profilePictureUrl String?   @map("profile_picture_url")
@@ -25,8 +25,8 @@ model User {
   country           Country   @relation(fields: [countryId], references: [id])
   cityId            String    @map("city_id")
   city              City      @relation(fields: [cityId], references: [id])
-  personality       Bytes?
-  borndate          DateTime?
+  personality       Json?
+  bornDate          DateTime? @map("born_date")
   occupation        String
   mbti              String?
   mbtiDesc          String?   @map("mbti_desc")
@@ -83,6 +83,7 @@ model User {
   userPermissions UserPermission[]
   Room            Room[]
   Participant     Participant[]
+  preferences     Preference[]
 
   @@index([email])
   @@index([username])
@@ -223,6 +224,7 @@ model Region {
   id        String    @id @default(uuid())
   name      String
   countries Country[]
+  rooms     Room[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -256,7 +258,8 @@ model City {
   name      String
   latitude  Float?
   longitude Float?
-  users     User[] // back-relation untuk User.city
+  users     User[] 
+  rooms     Room[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -271,6 +274,10 @@ model Room {
   slug           String        @unique
   categoryId     String        @map("category_id")
   category       Category      @relation(fields: [categoryId], references: [id])
+  regionId       String        @map("region_id")
+  region         Region        @relation(fields: [regionId], references: [id])
+  cityId         String        @map("city_id")        
+  city           City          @relation(fields: [cityId], references: [id])
   type           RoomType?
   title          String
   description    String?       @db.Text
@@ -280,13 +287,15 @@ model Room {
   maxParticipant Int           @map("max_participant")
   createdById    String        @map("created_by_id")
   createdBy      User          @relation(fields: [createdById], references: [id])
-  personality    Bytes?
+  personality    Json?
   participants   Participant[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([slug])
+  @@index([regionId])
+  @@index([cityId])
   @@index([categoryId])
   @@map("rooms")
 }
@@ -324,11 +333,11 @@ model Category {
 
 model Questioner {
   id        String         @id @default(uuid())
-  category  String
-  type      QuestionerType
-  question  String
-  createdAt DateTime       @default(now()) @map("created_at")
-  updatedAt DateTime       @updatedAt @map("updated_at")
+  category  String?
+  type      QuestionerType?
+  question  String?
+  createdAt DateTime?       @default(now()) @map("created_at")
+  updatedAt DateTime?       @updatedAt @map("updated_at")
 
   @@map("questioners")
 }
@@ -342,4 +351,18 @@ enum RoomType {
 enum QuestionerType {
   number
   scale
+}
+
+model Preference {
+  id        String  @id @default(uuid())
+  userId    String  @map("user_id")
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([name])
+  @@map("preferences")
 }

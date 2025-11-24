@@ -1,0 +1,13 @@
+import { Router } from 'express';
+import profileController from './profile.controller.js';
+
+import { validate } from "../../middleware/validate.middleware.js";
+import { updateProfileSchema } from './profile.validation.js';
+
+
+const router = Router();
+
+router.get('/', profileController.getProfile);
+router.put('/update', validate(updateProfileSchema), profileController.updateProfile);
+
+export { router as profileRouter };

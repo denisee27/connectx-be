@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { Status } from "@prisma/client";
 import { UnauthorizedError, NotFoundError, ValidationError } from "../errors/httpErrors.js";
 import { buildSendVerificationEmail } from "../../infra/mailer/templates/sendVerification/sendVerification.js";
+
 export function makeAuthService({
   userRepository,
   authRepository,

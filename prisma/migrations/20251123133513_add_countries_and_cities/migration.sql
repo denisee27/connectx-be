@@ -10,7 +10,7 @@
 CREATE TYPE "Gender" AS ENUM ('male', 'female');
 
 -- AlterTable
-ALTER TABLE "users" ADD COLUMN     "borndate" TIMESTAMP(3),
+ALTER TABLE "users" ADD COLUMN     "bornDate" TIMESTAMP(3),
 ADD COLUMN     "city_id" TEXT NOT NULL,
 ADD COLUMN     "country_id" TEXT NOT NULL,
 ADD COLUMN     "desc_personalization" TEXT,
