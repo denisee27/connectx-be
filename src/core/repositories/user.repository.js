@@ -11,7 +11,8 @@ export function makeUserRepository({ prisma }) {
     email: true,
     username: true,
     name: true,
-    role: true,
+    city: true,
+    country: true,
     status: true,
     profilePictureUrl: true,
     gender: true,
@@ -21,12 +22,22 @@ export function makeUserRepository({ prisma }) {
     mbtiDesc: true,
     descPersonal: true,
     bornDate: true,
-    personality: true,
-    countryId: true,
-    cityId: true,
-    createdAt: true,
-    lastLoginAt: true,
-    emailVerifiedAt: true,
+  };
+  const calculateAge = (bornDate) => {
+    if (!bornDate) return null;
+
+    const today = new Date();
+    const birthDate = new Date(bornDate);
+
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+
+    // Jika bulan belum sampai, atau bulan sama tapi tanggal belum sampai, kurangi 1 tahun
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    return age;
   };
 
   return {
@@ -37,10 +48,15 @@ export function makeUserRepository({ prisma }) {
      */
     // TODO: Change this to include what you need, maybe verified? maybe notDeleted?
     async findById(id) {
-      return prisma.user.findUnique({
+      const user = await prisma.user.findUnique({
         where: { id },
         select: safeUserSelect,
       });
+      if (!user) return null;
+      return {
+        ...user,
+        age: calculateAge(user.bornDate)
+      };
     },
 
     /**

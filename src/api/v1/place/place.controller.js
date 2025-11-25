@@ -37,4 +37,13 @@ export default {
             next(error);
         }
     },
+    async getRoomsFromRegion(req, res, next) {
+        try {
+            const placeService = req.scope.resolve("placeService");
+            const rooms = await placeService.findRoomsFromRegion();
+            res.status(200).json(rooms);
+        } catch (error) {
+            next(error);
+        }
+    },
 };

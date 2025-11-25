@@ -1,3 +1,5 @@
+import { getPageData } from "../utils/pagination.js";
+
 /**
  * @typedef {import('@prisma/client').PrismaClient} PrismaClient
  * @typedef {import('@prisma/client').Room} Room
@@ -5,11 +7,14 @@
  * @typedef {import('../utils/pagination.js').Pagination} Pagination
  */
 
+
 export const safeRoomSelect = {
     id: true,
     slug: true,
     categoryId: true,
     cityId: true,
+    city: true,
+    category: true,
     regionId: true,
     type: true,
     title: true,
@@ -24,7 +29,7 @@ export const safeRoomSelect = {
 /**
  * @param {PrismaClient} prisma
  */
-export function makeRoomRepository(prisma) {
+export function makeRoomRepository({ prisma }) {
     return {
         /**
          * @param {string} id
@@ -33,6 +38,48 @@ export function makeRoomRepository(prisma) {
         findById(id) {
             return prisma.room.findUnique({
                 where: { id },
+                select: safeRoomSelect,
+            });
+        },
+
+        /**
+         * @returns {Promise<Room[]>}
+         */
+        getHighlights() {
+            return prisma.room.findMany({
+                take: 6,
+                where: {
+                    datetime: {
+                        gte: new Date(),
+                    },
+                },
+                orderBy: {
+                    participants: {
+                        _count: 'desc',
+                    },
+                },
+                select: safeRoomSelect,
+            });
+        },
+
+        /**
+         * @param {Pagination} { page, limit, search, categoryId, type }
+         * @returns {Promise<PageData<Room>>}
+         */
+        getPopular() {
+            return prisma.room.findMany({
+                take: 8,
+                orderBy: {
+                    participants: {
+                        _count: 'desc',
+                    },
+                },
+                // where: {
+                //     cityId: {
+                //         // contains: userId,
+                //         mode: 'insensitive',
+                //     },
+                // },
                 select: safeRoomSelect,
             });
         },

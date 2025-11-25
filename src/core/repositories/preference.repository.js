@@ -19,6 +19,12 @@ export function makePreferenceRepository({ prisma }) {
             });
         },
 
+        async findAll() {
+            return prisma.preference.findMany({
+                select: safePreferenceSelect,
+            });
+        },
+
         /**
          * @param {import('../utils/pagination.js').PaginationOptions} options
          */

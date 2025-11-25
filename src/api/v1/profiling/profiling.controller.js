@@ -17,4 +17,14 @@ export default {
       next(error);
     }
   },
+
+  async getCategories(req, res, next) {
+    try {
+      const profilingService = req.scope.resolve("profilingService");
+      const result = await profilingService.getCategories();
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
 };

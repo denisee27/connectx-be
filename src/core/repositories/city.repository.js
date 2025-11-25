@@ -1,5 +1,3 @@
-import { getPageData } from '../utils/pagination.js';
-
 /**
  * @typedef {import('@prisma/client').PrismaClient} PrismaClient
  * @typedef {import('@prisma/client').City} City
@@ -16,7 +14,7 @@ export const safeCitySelect = {
 /**
  * @param {PrismaClient} prisma
  */
-export function makeCityRepository(prisma) {
+export function makeCityRepository({ prisma }) {
     return {
         /**
          * @param {string} id
@@ -26,6 +24,19 @@ export function makeCityRepository(prisma) {
             return prisma.city.findUnique({
                 where: { id },
                 select: safeCitySelect,
+            });
+        },
+        /**
+         * @param {string} countryId
+         * @returns {Promise<City[]>}
+         */
+        findByCountryId(countryId) {
+            return prisma.city.findMany({
+                where: { countryId },
+                select: safeCitySelect,
+                orderBy: {
+                    name: 'asc',
+                },
             });
         },
 

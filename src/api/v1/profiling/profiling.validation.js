@@ -17,7 +17,7 @@ export const temporaryUserSchema = z.object({
     ).min(1, "At least one preference is required"),
     answers: z.array(
       z.object({
-        id: z.number(),
+        id: z.string().optional().nullable(),
         value: z.any(),
         question: z.string(),
       })

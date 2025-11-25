@@ -18,6 +18,8 @@ import { rolesRouter } from "./api/v1/roles/roles.router.js";
 import { statsRouter } from "./api/v1/stats/stats.router.js";
 import { profileRouter } from "./api/v1/profile/profile.router.js";
 import { scheduleRouter } from "./api/v1/schedule/schedule.router.js";
+import { categoryRouter } from "./api/v1/category/category.router.js";
+import { roomRouter } from "./api/v1/room/room.router.js";
 
 const app = express();
 app.set("trust proxy", 1); // if behind a proxy/CDN
@@ -80,6 +82,8 @@ app.get("/api-docs.json", (req, res) => {
 // API routes
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/profile", profileRouter);
+app.use("/api/v1/categories", categoryRouter);
+app.use("/api/v1/rooms", roomRouter);
 app.use("/api/v1/schedules", scheduleRouter);
 app.use("/api/v1/profiling", profilingRouter);
 app.use("/api/v1/places", placeRouter);

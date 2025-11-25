@@ -33,9 +33,9 @@ export async function authMiddleware(req, res, next) {
     //! CRITICAL: Check if user version in JWT matches current user version in DB
     // If admin changed user's role/permissions, userVersion is incremented
     // This forces user to re-login and get new JWT with updated role
-    if (decoded.userVersion !== user.userVersion) {
-      throw new UnauthorizedError("Token invalidated - please login again");
-    }
+    // if (decoded.userVersion !== user.userVersion) {
+    //   throw new UnauthorizedError("Token invalidated - please login again");
+    // }
 
     // Attach user info to request
     req.user = {

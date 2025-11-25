@@ -1,7 +1,8 @@
 import axios from "axios";
+import jwt from "jsonwebtoken";
 import { ValidationError, NotFoundError } from "../errors/httpErrors.js"; import { email } from "zod";
 
-export function makeProfilingService({ questionRepository, preferenceRepository, userRepository, prisma, logger, env }) {
+export function makeProfilingService({ roomRepository, questionRepository, categoryRepository, userRepository, prisma, logger, env }) {
     return {
         async createTemporaryUser(body) {
             const {
@@ -17,8 +18,11 @@ export function makeProfilingService({ questionRepository, preferenceRepository,
 
             logger.info("Creating temporary user with data: %o", profile);
 
+            // --- MULAI BAGIAN YANG DULU TRANSACTION ---
+
+            // 1. Find City (ganti tx -> prisma)
             const city = await prisma.city.findFirst({
-                where: { name: { equals: profile.city, mode: "insensitive" } },
+                where: { id: profile.city },
                 include: { country: true },
             });
 
@@ -26,6 +30,7 @@ export function makeProfilingService({ questionRepository, preferenceRepository,
                 throw new NotFoundError(`City '${profile.city}' not found`);
             }
 
+            // 2. Find Role (ganti tx -> prisma)
             const role = await prisma.role.findFirst({
                 where: { name: "User" },
             });
@@ -34,17 +39,35 @@ export function makeProfilingService({ questionRepository, preferenceRepository,
                 throw new NotFoundError("Default 'USER' role not found.");
             }
 
-            const newUser = await userRepository.create({
-                name: profile.name,
-                email: profile.email,
-                gender: profile.gender,
-                occupation: profile.occupation,
-                phoneNumber: profile.phoneNumber,
-                bornDate: profile.bornDate,
-                cityId: city.id,
-                countryId: city.country.id,
-                roleId: role.id,
+            // 3. Create User (ganti tx -> prisma)
+            const newUser = await prisma.user.create({
+                data: {
+                    name: profile.name,
+                    email: profile.email,
+                    gender: profile.gender,
+                    occupation: profile.occupation,
+                    phoneNumber: profile.phoneNumber,
+                    bornDate: profile.bornDate,
+                    cityId: city.id,
+                    countryId: city.country.id,
+                    roleId: role.id,
+                }
             });
+
+            // 4. Create Preferences (ganti tx -> prisma)
+            // Code logic tetap menggunakan Promise.all sesuai permintaan
+            await Promise.all(
+                preferences.map((preference) =>
+                    prisma.preference.create({
+                        data: {
+                            userId: newUser.id,
+                            name: preference,
+                        }
+                    })
+                )
+            );
+
+            // --- SELESAI BAGIAN DATABASE ---
 
             const tokenPayload = {
                 userId: newUser.id,
@@ -56,16 +79,7 @@ export function makeProfilingService({ questionRepository, preferenceRepository,
             const accessToken = jwt.sign(
                 tokenPayload,
                 env.JWT_SECRET,
-                { expiresIn: '7d' }
-            );
-
-            const createdPreferences = await Promise.all(
-                preferences.map((preference) =>
-                    preferenceRepository.create({
-                        userId: newUser.id,
-                        name: preference,
-                    })
-                )
+                { expiresIn: '10d' }
             );
 
             logger.info("Calling matchmaking API");
@@ -75,27 +89,30 @@ export function makeProfilingService({ questionRepository, preferenceRepository,
                     "preferences": preferences,
                     "personalities": answers,
                     "meetup_preference": meetUpPreference,
-                    "city": city.name,
+                    "city_id": city.id,
                 },
                 {
                     headers: {
                         "x-api-key": env.AI_TOKEN,
-                        "Content-Type": "application/json" // Opsional tapi good practice
+                        "Content-Type": "application/json"
                     }
                 });
 
-            const roomIds = response.matches;
-            if (!roomIds || roomIds.length === 0) {
+            const matches = response.data.matches;
+            console.log(matches)
+            if (!matches || matches.length === 0) {
                 logger.warn("Matchmaking API returned no room IDs");
-                return { user: newUser, preferences: createdPreferences, rooms: [] };
+                return { accessToken, rooms: [] };
             }
 
-            const rooms = await prisma.room.findMany({
+            const roomIds = matches.map(match => match.room_id);
+
+            const rooms = await roomRepository.findMany({
                 where: {
-                    id: { in: roomIds.room_id },
+                    id: { in: roomIds },
                 },
             });
-
+            console.log(rooms)
             logger.info("Operation successful");
             return { accessToken, rooms };
         },
@@ -106,24 +123,40 @@ export function makeProfilingService({ questionRepository, preferenceRepository,
                 const j = Math.floor(Math.random() * (i + 1));
                 [allQuestions[i], allQuestions[j]] = [allQuestions[j], allQuestions[i]];
             }
-            const questions = allQuestions.slice(0, 50);
 
-            const response = await axios.post(env.AI_AGENT_URL + "/mbti/questions", {
-                mbti_questions: questions,
-                headers: {
-                    "x-api-key": env.AI_TOKEN,
+            const selectedQuestions = allQuestions.slice(0, 50);
+            const payload = {
+                "mbti_questions": selectedQuestions,
+            };
+
+            const response = await axios.post(
+                `${env.AI_AGENT_URL}/mbti/questions`,
+                payload,
+                {
+                    headers: {
+                        "x-api-key": env.AI_TOKEN,
+                    }
                 }
-            });
+            );
 
+            const rawNewQuestions = response.data.mbti_questions || [];
+            const questionsToInsert = rawNewQuestions
+                .filter(q => q.id === null)
+                .map(({ id, ...rest }) => rest);
+            if (questionsToInsert.length > 0) {
+                await prisma.questioner.createMany({
+                    data: questionsToInsert,
+                    skipDuplicates: true
+                });
+            }
             return response.data;
         },
 
         async updateProfile(userId, data) {
-            const user = await userRepository.update(userId, data);
-            if (!user) {
-                throw new NotFoundError("User not found");
-            }
-            return user;
+            return prisma.$transaction(tx => tx.user.update({
+                where: { id: userId },
+                data,
+            }));
         },
 
         async getProfile(userId) {
@@ -138,5 +171,11 @@ export function makeProfilingService({ questionRepository, preferenceRepository,
             }
             return user;
         },
+
+        async getCategories() {
+            const allCategories = await categoryRepository.findAll();
+            return allCategories;
+        },
     };
+
 }

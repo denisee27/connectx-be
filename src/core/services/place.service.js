@@ -1,16 +1,16 @@
-export function makePlaceService({ placeRepository }) {
+export function makePlaceService({ cityRepository, regionRepository, countryRepository }) {
     return {
         async getCountries() {
-            return placeRepository.findCountries();
+            return countryRepository.findAll();
         },
         async getRegions() {
-            return placeRepository.findRegions();
-        },
-        async getCities() {
-            return placeRepository.findCities();
+            return regionRepository.findAll();
         },
         async getCitiesByCountryId(countryId) {
-            return placeRepository.findCitiesByCountryId(countryId);
+            return cityRepository.findByCountryId(countryId);
+        },
+        async findRoomsFromRegion() {
+            return regionRepository.findRoomsFromRegion();
         },
     };
 }

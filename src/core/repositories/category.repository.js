@@ -1,4 +1,3 @@
-import { getPageData } from '../utils/pagination.js';
 
 /**
  * @typedef {import('@prisma/client').PrismaClient} PrismaClient
@@ -14,12 +13,13 @@ export const safeCategorySelect = {
     icon: true,
     description: true,
     banner: true,
+
 };
 
 /**
  * @param {PrismaClient} prisma
  */
-export function makeCategoryRepository(prisma) {
+export function makeCategoryRepository({ prisma }) {
     return {
         /**
          * @param {string} id
@@ -39,7 +39,53 @@ export function makeCategoryRepository(prisma) {
         findBySlug(slug) {
             return prisma.category.findUnique({
                 where: { slug },
-                select: safeCategorySelect,
+                select: {
+                    ...safeCategorySelect,
+                    rooms: {
+                        where: {
+                            datetime: {
+                                gte: new Date()
+                            }
+                        },
+                        select: {
+                            id: true,
+                            title: true,
+                            slug: true,
+                            type: true,
+                            address: true,
+                            datetime: true,
+                            city: true,
+                            _count: {
+                                select: {
+                                    participants: true
+                                }
+                            }
+                        }
+                    }
+
+                },
+            });
+        },
+
+        /**
+         * @returns {Promise<Category[]>}
+         */
+        async findAll() {
+            return prisma.category.findMany({
+                select: {
+                    ...safeCategorySelect,
+                    _count: {
+                        select: {
+                            rooms: {
+                                where: {
+                                    datetime: {
+                                        gte: new Date()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
             });
         },
 

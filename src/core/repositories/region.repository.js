@@ -1,5 +1,3 @@
-import { getPageData } from '../utils/pagination.js';
-
 /**
  * @typedef {import('@prisma/client').PrismaClient} PrismaClient
  * @typedef {import('@prisma/client').Region} Region
@@ -15,7 +13,7 @@ export const safeRegionSelect = {
 /**
  * @param {PrismaClient} prisma
  */
-export function makeRegionRepository(prisma) {
+export function makeRegionRepository({ prisma }) {
     return {
         /**
          * @param {string} id
@@ -26,6 +24,76 @@ export function makeRegionRepository(prisma) {
                 where: { id },
                 select: safeRegionSelect,
             });
+        },
+
+        /**
+         * @returns {Promise<Region[]>}
+         */
+        async findAll() {
+            return prisma.region.findMany({
+                select: safeRegionSelect,
+            });
+        },
+        /**
+         * @param {string} regionId
+         * @returns {Promise<Region[]>}
+         */
+        async findRoomsFromRegion(regionId) {
+            const rawData = await prisma.region.findMany({
+                where: {
+                    rooms: {
+                        some: {
+                            datetime: {
+                                gte: new Date()
+                            }
+                        }
+                    },
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    rooms: {
+                        where: {
+                            datetime: {
+                                gte: new Date()
+                            }
+                        },
+                        select: {
+                            city: {
+                                select: {
+                                    id: true,
+                                    name: true
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            const formattedData = rawData.map(region => {
+                const cityMap = {};
+
+                region.rooms.forEach(room => {
+                    const city = room.city;
+                    if (city) {
+                        if (!cityMap[city.id]) {
+                            cityMap[city.id] = {
+                                id: city.id,
+                                name: city.name,
+                                count: 0
+                            };
+                        }
+                        cityMap[city.id].count += 1;
+                    }
+                });
+
+                return {
+                    id: region.id,
+                    name: region.name,
+                    cities: Object.values(cityMap)
+                };
+            });
+
+            return formattedData;
         },
 
         /**
