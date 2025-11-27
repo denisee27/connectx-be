@@ -24,6 +24,9 @@ import { makeRoomService } from "./core/services/room.service.js";
 import { makeCountryRepository } from "./core/repositories/country.repository.js";
 import { makeRegionRepository } from "./core/repositories/region.repository.js";
 import { makeCityRepository } from "./core/repositories/city.repository.js";
+import { makeAuthenticationLogRepository } from "./core/repositories/authenticationLog.repository.js";
+import { makeConversationService } from "./core/services/conversation.service.js";
+import { makeCurrentSessionRepository } from "./core/repositories/currentSession.repository.js";
 
 const container = createContainer();
 
@@ -43,7 +46,9 @@ container.register({
   profileService: asFunction(makeProfileService).singleton(),
   roomService: asFunction(makeRoomService).singleton(),
   statsService: asFunction(makeStatsService).singleton(),
+  conversationService: asFunction(makeConversationService).singleton(),
   categoryService: asFunction(makeCategoryService).singleton(),
+  currentSessionRepository: asFunction(makeCurrentSessionRepository).singleton(),
   profilingService: asFunction(makeProfilingService).singleton(),
   placeService: asFunction(makePlaceService).singleton(),
   scheduleService: asFunction(makeScheduleService).singleton(),
@@ -61,6 +66,7 @@ container.register({
   authRepository: asFunction(makeAuthRepository).singleton(),
   rbacRepository: asFunction(makeRbacRepository).singleton(),
   categoryRepository: asFunction(makeCategoryRepository).singleton(),
+  authenticationLogRepository: asFunction(makeAuthenticationLogRepository).singleton(),
   userLogRepository: asFunction(makeUserLogRepository).singleton(),
 });
 

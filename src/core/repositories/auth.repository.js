@@ -49,5 +49,10 @@ export function makeAuthRepository({ prisma }) {
         data,
       });
     },
+    async findByVerificationToken(token) {
+      return prisma.user.findUnique({
+        where: { verificationToken: token },
+      });
+    },
   };
 }

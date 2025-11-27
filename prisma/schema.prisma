@@ -13,7 +13,7 @@ datasource db {
 // User model with improved relations and field names
 model User {
   id                String    @id @default(uuid())
-  email             String    
+  email             String    @unique
   username          String?   @unique
   name              String
   profilePictureUrl String?   @map("profile_picture_url")
@@ -21,13 +21,13 @@ model User {
   passwordHash      String?   @map("password_hash")
   status            Status    @default(ACTIVE)
   gender            Gender?
-  countryId         String    @map("country_id")
-  country           Country   @relation(fields: [countryId], references: [id])
-  cityId            String    @map("city_id")
-  city              City      @relation(fields: [cityId], references: [id])
+  countryId         String?    @map("country_id")
+  country           Country?   @relation(fields: [countryId], references: [id])
+  cityId            String?    @map("city_id")
+  city              City?      @relation(fields: [cityId], references: [id])
   personality       Json?
   bornDate          DateTime? @map("born_date")
-  occupation        String
+  occupation        String?
   mbti              String?
   mbtiDesc          String?   @map("mbti_desc")
   descPersonal      String?   @map("desc_personalization")
@@ -256,6 +256,7 @@ model City {
   countryId String  @map("country_id")
   country   Country @relation(fields: [countryId], references: [id])
   name      String
+  slug      String?
   latitude  Float?
   longitude Float?
   users     User[] 
@@ -282,11 +283,12 @@ model Room {
   title          String
   description    String?       @db.Text
   datetime       DateTime
+  banner         String?
   address        String?
   gmaps          String?
   maxParticipant Int           @map("max_participant")
-  createdById    String        @map("created_by_id")
-  createdBy      User          @relation(fields: [createdById], references: [id])
+  createdById    String?       @map("created_by_id")
+  createdBy      User?          @relation(fields: [createdById], references: [id])
   personality    Json?
   participants   Participant[]
 
@@ -365,4 +367,9 @@ model Preference {
   @@index([userId])
   @@index([name])
   @@map("preferences")
+}
+
+model currentSession {
+  id        String   @id @default(uuid())
+  currentSession String
 }

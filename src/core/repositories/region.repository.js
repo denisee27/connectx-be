@@ -62,7 +62,7 @@ export function makeRegionRepository({ prisma }) {
                             city: {
                                 select: {
                                     id: true,
-                                    name: true
+                                    name: true,
                                 }
                             }
                         }

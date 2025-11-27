@@ -1,5 +1,4 @@
 export default {
-
     async getCountries(req, res, next) {
         try {
             const placeService = req.scope.resolve("placeService");
@@ -41,6 +40,16 @@ export default {
         try {
             const placeService = req.scope.resolve("placeService");
             const rooms = await placeService.findRoomsFromRegion();
+            res.status(200).json(rooms);
+        } catch (error) {
+            next(error);
+        }
+    },
+    async getRoomsFromCity(req, res, next) {
+        try {
+            const placeService = req.scope.resolve("placeService");
+            const { cityId } = req.params;
+            const rooms = await placeService.RoomsFromCity(cityId);
             res.status(200).json(rooms);
         } catch (error) {
             next(error);

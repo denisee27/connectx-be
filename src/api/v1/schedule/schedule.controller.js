@@ -1,8 +1,8 @@
 export default {
     async getUpcoming(req, res, next) {
         try {
-            const scheduleService = req.container.resolve('scheduleService');
-            const upcoming = await scheduleService.getUpcomingSchedules(req.user.id);
+            const scheduleService = req.scope.resolve('scheduleService');
+            const upcoming = await scheduleService.getUpcomingSchedules('5ccd8a7b-e20d-456c-8bad-41d2a6660b1b');
             res.status(200).json({ success: true, data: upcoming });
         } catch (error) {
             next(error);
@@ -10,8 +10,8 @@ export default {
     },
     async getPast(req, res, next) {
         try {
-            const scheduleService = req.container.resolve('scheduleService');
-            const past = await scheduleService.getPastSchedules(req.user.id);
+            const scheduleService = req.scope.resolve('scheduleService');
+            const past = await scheduleService.getPastSchedules('5ccd8a7b-e20d-456c-8bad-41d2a6660b1b');
             res.status(200).json({ success: true, data: past });
         } catch (error) {
             next(error);

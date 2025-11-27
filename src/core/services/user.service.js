@@ -21,11 +21,6 @@ export function makeUserService({ userRepository, env, logger, mailerService }) 
         throw new ConflictError("Email already in use");
       }
 
-      const existingUsername = await userRepository.findByUsername(data.username);
-      if (existingUsername) {
-        throw new ConflictError("Username already in use");
-      }
-
       const passwordHash = await bcrypt.hash(data.password, env.BCRYPT_ROUNDS);
 
       const user = await userRepository.create({
@@ -56,11 +51,6 @@ export function makeUserService({ userRepository, env, logger, mailerService }) 
       if (data.email && data.email !== user.email) {
         const existing = await userRepository.findByEmail(data.email);
         if (existing) throw new ConflictError("Email already in use");
-      }
-
-      if (data.username && data.username !== user.username) {
-        const existing = await userRepository.findByUsername(data.username);
-        if (existing) throw new ConflictError("Username already in use");
       }
 
       if (data.password) {

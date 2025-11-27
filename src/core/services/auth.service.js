@@ -1,27 +1,43 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import { Status } from "@prisma/client";
 import { UnauthorizedError, NotFoundError, ValidationError } from "../errors/httpErrors.js";
 import { buildSendVerificationEmail } from "../../infra/mailer/templates/sendVerification/sendVerification.js";
+// import {
+//   Status,
+//   AuthenticationEvent,
+// } from "@prisma/client";
 
+import pkg from "@prisma/client";
+const { Status, AuthenticationEvent } = pkg;
+
+const safeMetadata = ({ platform, location, extra }) => {
+  const meta = {
+    ...(platform ? { platform } : {}),
+    ...(location ? { location } : {}),
+    ...(extra && Object.keys(extra).length ? { extra } : {}),
+  };
+  return Object.keys(meta).length ? meta : undefined;
+};
 export function makeAuthService({
   userRepository,
   authRepository,
   mailerService,
   rbacRepository,
+  authenticationLogRepository,
   env,
   logger,
 }) {
   return {
-    async login({ username, password }) {
-      const user = await userRepository.findByUsernameForAuth(username);
+    async login({ email, password }) {
+      const user = await userRepository.findByEmailForAuth(email);
 
       if (!user || user.status === Status.DELETED) {
         throw new UnauthorizedError("Invalid credentials");
       }
 
       const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+      console.log("user123", isPasswordValid);
       if (!isPasswordValid) {
         throw new UnauthorizedError("Invalid credentials");
       }
@@ -38,7 +54,6 @@ export function makeAuthService({
         {
           userId: user.id,
           role: user.role,
-          username: user.username,
           userVersion: user.userVersion,
         },
         env.JWT_SECRET,
@@ -75,7 +90,6 @@ export function makeAuthService({
         user: {
           id: user.id,
           email: user.email,
-          username: user.username,
           name: user.name,
           role: user.role,
 
@@ -106,7 +120,6 @@ export function makeAuthService({
       return {
         id: user.id,
         email: user.email,
-        username: user.username,
         name: user.name,
         role: user.role,
         status: user.status,
@@ -144,7 +157,6 @@ export function makeAuthService({
         {
           userId: user.id,
           role: user.role,
-          username: user.username,
           userVersion: user.userVersion,
         },
         env.JWT_SECRET,
@@ -198,19 +210,15 @@ export function makeAuthService({
     },
 
     async createUser(data) {
-      const { email, username, name, phoneNumber, password } = data;
+      const { email, name, phoneNumber, password } = data;
 
       const emailExists = await authRepository.findByEmail(email);
-      const usernameExists = await authRepository.findByUsername(username);
       const role = await authRepository.findRoleByName("User"); // TODO: validate this
 
       if (emailExists) {
         throw new ValidationError("Email already exists");
       }
 
-      if (usernameExists) {
-        throw new ValidationError("Username already exists");
-      }
 
       if (!role) {
         throw new ValidationError("Default role User not found");
@@ -220,8 +228,12 @@ export function makeAuthService({
 
       const newUser = await authRepository.create({
         email,
-        username,
         name,
+        bornDate: data.bornDate,
+        gender: data.gender,
+        occupation: data.occupation,
+        country: data.country,
+        city: data.city,
         ...(phoneNumber ? { phoneNumber } : {}),
         passwordHash: hashedPassword,
         roleId: role.id,
@@ -231,13 +243,70 @@ export function makeAuthService({
         appUrl: env.APP_URL,
         token: crypto.randomBytes(32).toString("hex"),
         name: newUser.name,
-        username: newUser.username,
       });
 
       await mailerService.sendEmail({
         to: newUser.email,
         ...verificationEmail,
         appUrl: env.APP_URL,
+      });
+    },
+    async verifyEmail({ token }, clientContext) {
+      const now = new Date();
+      const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+      const user = await authRepository.findByVerificationToken(hashedToken);
+
+      // if (!user) {
+      //   await authenticationLogRepository.createLog({
+      //     userId: null,
+      //     event: AuthenticationEvent.VERIFY_EMAIL,
+      //     ipAddress: clientContext?.ipAddress,
+      //     userAgent: clientContext?.userAgent,
+      //     metadata: safeMetadata({
+      //       extra: { event: "FAILED_VERIFY_EMAIL", reason: "INVALID_TOKEN" },
+      //     }),
+      //   });
+      //   throw new ValidationError("Invalid verification token");
+      // }
+
+      // if (!user.verificationExpiresAt || user.verificationExpiresAt < now) {
+      //   await authenticationLogRepository.createLog({
+      //     userId: user.id,
+      //     event: AuthenticationEvent.LOGIN_FAILED,
+      //     ipAddress: clientContext?.ipAddress,
+      //     userAgent: clientContext?.userAgent,
+      //     metadata: safeMetadata({
+      //       extra: { event: "VERIFY_EMAIL", reason: "TOKEN_EXPIRED" },
+      //     }),
+      //   });
+      //   throw new ValidationError("Verification token has expired");
+      // }
+
+      // if (user.emailVerifiedAt) {
+      //   throw new ConflictError("Email already verified");
+      // }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            emailVerifiedAt: now,
+            verificationToken: null,
+            verificationExpiresAt: null,
+          },
+        });
+
+        await tx.authenticationLog.create({
+          data: {
+            userId: user.id,
+            event: AuthenticationEvent.LOGIN,
+            ipAddress: clientContext?.ipAddress,
+            userAgent: clientContext?.userAgent,
+            metadata: safeMetadata({
+              extra: { event: "VERIFY_EMAIL" },
+            }),
+          },
+        });
       });
     },
   };

@@ -12,5 +12,8 @@ export function makePlaceService({ cityRepository, regionRepository, countryRepo
         async findRoomsFromRegion() {
             return regionRepository.findRoomsFromRegion();
         },
+        async RoomsFromCity(cityId) {
+            return cityRepository.RoomsFromCity(cityId);
+        },
     };
 }

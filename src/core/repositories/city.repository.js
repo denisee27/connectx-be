@@ -39,6 +39,27 @@ export function makeCityRepository({ prisma }) {
                 },
             });
         },
+        /**
+       * @param {string} cityId
+       * @returns {Promise<City[]>}
+       */
+        RoomsFromCity(cityId) {
+            return prisma.city.findUnique({
+                where: { id: cityId },
+                select: {
+                    ...safeCitySelect, rooms: {
+                        select: {
+                            id: true,
+                            name: true,
+                            price: true,
+                            capacity: true,
+                            regionId: true,
+                        }
+                        
+                    }
+                },
+            });
+        },
 
         /**
          * @param {Pagination} page

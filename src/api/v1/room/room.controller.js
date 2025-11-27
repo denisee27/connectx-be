@@ -27,10 +27,15 @@ export default {
             next(error);
         }
     },
+    // Controller
     async getRooms(req, res, next) {
         try {
             const roomService = req.scope.resolve("roomService");
-            const { page = 1, limit = 10 } = req.query;
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const search = req.query.search || "";
+            const categoryId = req.query.categoryId;
+            const type = req.query.type;
             const rooms = await roomService.getRooms(page, limit);
             res.status(200).json(rooms);
         } catch (error) {

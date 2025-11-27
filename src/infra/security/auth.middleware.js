@@ -40,7 +40,6 @@ export async function authMiddleware(req, res, next) {
     // Attach user info to request
     req.user = {
       userId: decoded.userId,
-      username: decoded.username,
       role: user.role, // Use fresh role from DB (though version check should catch this)
       userVersion: decoded.userVersion,
     };

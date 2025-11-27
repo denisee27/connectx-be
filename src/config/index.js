@@ -55,6 +55,8 @@ const envSchema = z.object({
 
   SHUTDOWN_TIMEOUT: z.string().default("10000").transform(Number),
   APP_URL: z.string(),
+  AGENTURL: z.string(),
+  TOKENAGENT: z.string(),
 });
 
 const _env = envSchema.safeParse(process.env);

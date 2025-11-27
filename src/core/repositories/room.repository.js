@@ -1,5 +1,4 @@
 import { getPageData } from "../utils/pagination.js";
-
 /**
  * @typedef {import('@prisma/client').PrismaClient} PrismaClient
  * @typedef {import('@prisma/client').Room} Room
@@ -95,6 +94,17 @@ export function makeRoomRepository({ prisma }) {
             });
         },
 
+        async findByIds(ids) {
+            return prisma.room.findMany({
+                where: {
+                    id: {
+                        in: ids,
+                    },
+                },
+                select: safeRoomSelect,
+            });
+        },
+
         /**
          * @param {Pagination} { page, limit, search, categoryId, type }
          * @returns {Promise<PageData<Room>>}
@@ -112,9 +122,17 @@ export function makeRoomRepository({ prisma }) {
             const [rooms, total] = await Promise.all([
                 prisma.room.findMany({
                     where,
-                    select: safeRoomSelect,
+                    select: {
+                        ...safeRoomSelect,
+                        _count: {
+                            select: {
+                                participants: true,
+                            },
+                        },
+                    },
                     take: limit,
                     skip: (page - 1) * limit,
+
                 }),
                 prisma.room.count({ where }),
             ]);

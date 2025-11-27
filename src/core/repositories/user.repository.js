@@ -99,9 +99,9 @@ export function makeUserRepository({ prisma }) {
      * @param {string} username - The username of the user.
      * @returns {Promise<object|null>} The full user object or null if not found.
      */
-    async findByUsernameForAuth(username) {
+    async findByEmailForAuth(email) {
       return prisma.user.findUnique({
-        where: { username },
+        where: { email },
         include: {
           role: {
             select: {

@@ -102,4 +102,24 @@ export default {
       next(exception);
     }
   },
+  async verifyEmail(req, res, next) {
+    try {
+      const authService = req.scope.resolve("authService");
+      const clientContext = req.clientContext;
+      const token = req.body;
+
+      await authService.verifyEmail(token, clientContext);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          message: "Email verified successfully",
+        },
+      });
+    } catch (exception) {
+      next(exception);
+    }
+  },
 };
+
+

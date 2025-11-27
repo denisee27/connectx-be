@@ -1,6 +1,7 @@
 import axios from "axios";
 import jwt from "jsonwebtoken";
 import { ValidationError, NotFoundError } from "../errors/httpErrors.js"; import { email } from "zod";
+import crypto from "crypto";
 
 export function makeProfilingService({ roomRepository, questionRepository, categoryRepository, userRepository, prisma, logger, env }) {
     return {
@@ -82,15 +83,38 @@ export function makeProfilingService({ roomRepository, questionRepository, categ
                 { expiresIn: '10d' }
             );
 
+            const refreshToken = jwt.sign(
+                {
+                    userId: newUser.id,
+                    refreshTokenVersion: newUser.refreshTokenVersion || 1,
+                },
+                env.JWT_REFRESH_SECRET,
+                {
+                    expiresIn: env.JWT_REFRESH_EXPIRES_IN,
+                }
+            );
+
+            const refreshTokenHash = crypto.createHash("sha256").update(refreshToken).digest("hex");
+
+            console.log("accessToken:", refreshTokenHash);
+            await userRepository.update(newUser.id, {
+                refreshTokenHash,
+                lastLoginAt: new Date(),
+            });
+
+
+
+            const payload = {
+                "user_id": newUser.id,
+                "preferences": preferences,
+                "personalities": answers,
+                "meetup_preferences": meetUpPreference,
+                "city_id": city.id,
+            }
+            console.log(payload)
             logger.info("Calling matchmaking API");
             const response = await axios.post(env.AI_AGENT_URL + "/user/generate-embedding",
-                {
-                    "user_id": newUser.id,
-                    "preferences": preferences,
-                    "personalities": answers,
-                    "meetup_preference": meetUpPreference,
-                    "city_id": city.id,
-                },
+                payload,
                 {
                     headers: {
                         "x-api-key": env.AI_TOKEN,
@@ -98,23 +122,17 @@ export function makeProfilingService({ roomRepository, questionRepository, categ
                     }
                 });
 
-            const matches = response.data.matches;
-            console.log(matches)
+            console.log('matches:', response.data.matches)
+            const matches = response.data.matches || [];
             if (!matches || matches.length === 0) {
                 logger.warn("Matchmaking API returned no room IDs");
                 return { accessToken, rooms: [] };
             }
-
-            const roomIds = matches.map(match => match.room_id);
-
-            const rooms = await roomRepository.findMany({
-                where: {
-                    id: { in: roomIds },
-                },
-            });
-            console.log(rooms)
+            const roomIds = matches.map(match => match.id);
+            const rooms = await roomRepository.findByIds(roomIds);
+            console.log('rooms:', rooms)
             logger.info("Operation successful");
-            return { accessToken, rooms };
+            return { accessToken, rooms, refreshToken };
         },
 
         async getQuestions() {

@@ -1,7 +1,7 @@
 import express from "express";
 import authController from "./auth.controller.js";
 import { validate } from "../../middleware/validate.middleware.js";
-import { loginSchema, refreshTokenSchema, registerationSchema } from "./auth.validator.js";
+import { loginSchema, refreshTokenSchema, registerationSchema, verifyEmailSchema } from "./auth.validator.js";
 import { authMiddleware } from "../../../infra/security/auth.middleware.js";
 import { authLimiter } from "../../middleware/ratelimit.middleware.js";
 
@@ -311,5 +311,6 @@ router.get("/me", authMiddleware, authController.me);
  *         $ref: '#/components/responses/ValidationError'
  */
 router.post("/register", validate(registerationSchema), authController.createUser);
+router.post("/email/verify", validate(verifyEmailSchema), authController.verifyEmail);
 
 export { router as authRouter };
